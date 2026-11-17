@@ -1,0 +1,74 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Autoplay fixture</title>
+<style>
+  body { margin: 0; font-family: sans-serif; }
+  .player { position: relative; width: 320px; height: 180px; margin: 20px; }
+  .player video { width: 100%; height: 100%; background: #000; }
+  .player button { position: absolute; inset: 0; opacity: 0.3; }
+  #elsewhere { margin: 20px; padding: 20px; }
+</style>
+</head>
+<body>
+  <!-- 1. Plain autoplay attribute -->
+  <div class="player"><video id="attr" src="clip.webm" muted autoplay loop></video></div>
+
+  <!-- 2. Script calls play() on load, then retries muted like real players do -->
+  <div class="player"><video id="scripted" src="clip.webm" muted loop></video></div>
+
+  <!-- 3. Click-to-play behind an overlay button, started asynchronously -->
+  <div class="player" id="clickPlayer">
+    <video id="click" src="clip.webm" muted loop></video>
+    <button id="playBtn">Play</button>
+  </div>
+
+  <button id="elsewhere">Unrelated button</button>
+
+  <script>
+    window.results = {};
+    const $ = (id) => document.getElementById(id);
+
+    $('scripted').play().then(
+      () => (results.scripted = 'played'),
+      (e) => (results.scripted = e.name)
+    );
+
+    // Injected later with the autoplay property rather than the attribute.
+    const dyn = document.createElement('video');
+    dyn.id = 'dynamic';
+    dyn.muted = true;
+    dyn.autoplay = true;
+    dyn.src = 'clip.webm';
+    document.body.appendChild(dyn);
+
+    $('playBtn').addEventListener('click', () => {
+      $('playBtn').remove();
+      setTimeout(() => $('click').play().catch(() => {}), 400);
+    });
+
+    // Unrelated click handler that tries to start a video far from the click.
+    $('elsewhere').addEventListener('click', () => {
+      $('scripted').play().catch(() => {});
+    });
+
+    // Simulates a pre-roll ad ending: the player swaps in a new <video>.
+    window.swapVideo = () => {
+      const old = $('click');
+      const next = document.createElement('video');
+      next.id = 'swapped';
+      next.muted = true;
+      next.src = 'clip.webm';
+      old.replaceWith(next);
+      return next.play().then(() => 'played', (e) => e.name);
+    };
+
+    // Simulates client-side navigation followed by the new page autoplaying.
+    window.navigateAndPlay = () => {
+      history.pushState({}, '', '/another/story');
+      return $('swapped').play().then(() => 'played', (e) => e.name);
+    };
+  </script>
+</body>
+</html>
