@@ -50,3 +50,7 @@ makes no network requests.
 
 `node test/run.js` loads the unpacked extension into Chromium via Playwright
 and serves `test/fixture.html` as a stand-in for `www.espn.com`.
+
+## License
+
+[MIT](LICENSE)
